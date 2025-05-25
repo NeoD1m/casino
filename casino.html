@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GoldenCoin Casino</title>
+  <style>
+    body {
+      background: #121212;
+      color: gold;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .coin-display {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      background: gold;
+      color: black;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #ffd700;
+    }
+
+    .game-box {
+      border: 2px solid gold;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px auto;
+      width: 300px;
+    }
+
+    #notification {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 215, 0, 0.9);
+      color: black;
+      padding: 15px 25px;
+      border-radius: 10px;
+      font-weight: bold;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+      z-index: 999;
+    }
+
+    #notification.show {
+      opacity: 1;
+    }
+
+    /* Slot machine styles */
+    .slot {
+      font-size: 2em;
+      display: inline-block;
+      width: 1.5em;
+      margin: 0 5px;
+    }
+
+    .spinning {
+      animation: spin 0.1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotateX(0); }
+      100% { transform: rotateX(360deg); }
+    }
+
+    /* Coin flip styles */
+    .coin-container {
+      perspective: 1000px;
+      margin-top: 20px;
+      height: 120px;
+    }
+
+    .coin {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, gold, #b8860b);
+      line-height: 100px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: black;
+      transform-style: preserve-3d;
+      transform: rotateY(0deg);
+      transition: transform 1s;
+    }
+
+    .coin.flip {
+      animation: flipCoin 1s forwards;
+    }
+
+    @keyframes flipCoin {
+      0%   { transform: rotateY(0deg); }
+      100% { transform: rotateY(1440deg); } /* 4 full spins */
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎰 NeoDim Casino 🎰</h1>
+  <div class="coin-display">Coins: <span id="coinBalance">100</span></div>
+  <button onclick="resetCoins()">Reset Coins</button>
+
+  <!-- Slot Machine -->
+  <div class="game-box">
+    <h2>Slot Machine</h2>
+    <div id="slotDisplay">
+      <span class="slot" id="slot1">🍒</span>
+      <span class="slot" id="slot2">🍋</span>
+      <span class="slot" id="slot3">🍇</span>
+    </div>
+    <button onclick="playSlot()">Spin (Cost: 5)</button>
+  </div>
+
+  <!-- Coin Flip -->
+  <div class="game-box">
+    <h2>Coin Flip</h2>
+    <button onclick="flipAnimatedCoin('heads')">Bet on Heads (Cost: 2)</button>
+    <button onclick="flipAnimatedCoin('tails')">Bet on Tails (Cost: 2)</button>
+    <div class="coin-container">
+      <div id="coin" class="coin">🪙</div>
+    </div>
+    <div id="coinResult" style="margin-top: 10px; font-size: 1.2em;"></div>
+  </div>
+
+  <div id="notification"></div>
+
+  <script>
+    let coins = parseInt(localStorage.getItem('goldCoins')) || 100;
+    const coinDisplay = document.getElementById('coinBalance');
+    const notificationBox = document.getElementById('notification');
+    const symbols = ['🍒', '🍋', '🍇', '🔔', '⭐', '🍉', '💎'];
+
+    function updateCoins(amount) {
+      coins += amount;
+      coinDisplay.textContent = coins;
+      localStorage.setItem('goldCoins', coins);
+    }
+
+    function resetCoins() {
+      coins = 100;
+      updateCoins(0);
+      showNotification("Balance reset to 100 coins");
+    }
+
+    function showNotification(message) {
+      notificationBox.textContent = message;
+      notificationBox.classList.add('show');
+      setTimeout(() => {
+        notificationBox.classList.remove('show');
+      }, 2000);
+    }
+
+    function playSlot() {
+      if (coins < 5) {
+        showNotification("❌ Not enough coins!");
+        return;
+      }
+
+      updateCoins(-5);
+
+      const s1 = document.getElementById('slot1');
+      const s2 = document.getElementById('slot2');
+      const s3 = document.getElementById('slot3');
+      const slots = [s1, s2, s3];
+
+      // Start animation
+      slots.forEach(slot => slot.classList.add('spinning'));
+
+      let spinInterval = setInterval(() => {
+        slots.forEach(slot => {
+          slot.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        });
+      }, 100);
+
+      setTimeout(() => {
+        clearInterval(spinInterval);
+        const final = [
+          symbols[Math.floor(Math.random() * symbols.length)],
+          symbols[Math.floor(Math.random() * symbols.length)],
+          symbols[Math.floor(Math.random() * symbols.length)]
+        ];
+        [s1, s2, s3].forEach((slot, i) => {
+          slot.textContent = final[i];
+          slot.classList.remove('spinning');
+        });
+
+        // Reward
+        if (final[0] === final[1] && final[1] === final[2]) {
+          updateCoins(50);
+          showNotification("🎉 Jackpot! +50 coins");
+        } else if (final[0] === final[1] || final[1] === final[2] || final[0] === final[2]) {
+          updateCoins(10);
+          showNotification("😊 You won +10 coins!");
+        } else {
+          showNotification("😐 No win. Try again!");
+        }
+      }, 1000);
+    }
+
+    // Coin Flip logic
+    const coinEl = document.getElementById('coin');
+    const resultText = document.getElementById('coinResult');
+
+    function flipAnimatedCoin(playerChoice) {
+      if (coins < 2) {
+        showNotification("❌ Not enough coins!");
+        return;
+      }
+
+      updateCoins(-2);
+      coinEl.classList.remove('flip');
+      void coinEl.offsetWidth; // reset animation
+      coinEl.classList.add('flip');
+      resultText.textContent = "Flipping...";
+
+      setTimeout(() => {
+        const isHeads = Math.random() < 0.5;
+        const result = isHeads ? 'heads' : 'tails';
+        coinEl.textContent = isHeads ? '🙂' : '🦅';
+
+        resultText.textContent = `🪙 Coin landed: ${result}`;
+
+        if (result === playerChoice) {
+          updateCoins(5);
+          showNotification("✅ You won +5 coins!");
+        } else {
+          showNotification("❌ You lost. Try again!");
+        }
+      }, 1000);
+    }
+
+    updateCoins(0); // Refresh on load
+  </script>
+</body>
+</html>
